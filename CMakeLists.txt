@@ -10,6 +10,7 @@ set(CMAKE_COLOR_DIAGNOSTICS ON)
 # ====================== Main ======================
 add_executable(game src/main.cpp)
 target_include_directories(game PRIVATE src)
+target_link_libraries(game ncurses)
 
 # ====================== Formatting ======================
 
