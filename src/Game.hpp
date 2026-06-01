@@ -49,17 +49,19 @@ public:
         }
     }
 
-        void update() {
-        // Сначала обновляем все сущности
+    void update() {
+        int aliensAlive = 0;
+
+        // Обновление и подсчет врагов
         for (auto* e : entities_) {
             if (e->isAlive()) {
                 e->update();
 
-                // Проверка стен для пришельцев
                 if (Alien* alien = dynamic_cast<Alien*>(e)) {
+                    aliensAlive++;
                     alien->checkWallBounce(1, width_ - 2);
 
-                    // Если пришелец достиг низа (земли)
+                    // Проверка достижения земли
                     if (alien->getY() >= height_ - 2) {
                         player_->loseLife();
                         alien->kill();
@@ -68,8 +70,7 @@ public:
             }
         }
 
-        // Проверяем столкновения (Пули vs Пришельцы)
-        // Используем два цикла, так как сравниваем объекты внутри одного списка
+        // Коллизии (Пули vs Пришельцы)
         for (auto* bullet : entities_) {
             // Пропускаем, если это не пуля или она мертва
             if (!bullet->isAlive()) continue;
@@ -83,12 +84,9 @@ public:
             // Пока считаем, что все пули в списке — наши, или проверяем тип.
 
             for (auto* target : entities_) {
-                if (target == bullet) continue; // Не сталкиваем пулю саму с собой
-                if (!target->isAlive()) continue;
+                if (target == bullet || !target->isAlive()) continue;
 
-                // Нас интересуют только пришельцы (не игрок и не другие пули)
                 if (dynamic_cast<Alien*>(target)) {
-                    // Простая проверка: расстояние между центрами <= 1
                     int dx = std::abs(bullet->getX() - target->getX());
                     int dy = std::abs(bullet->getY() - target->getY());
 
@@ -102,14 +100,14 @@ public:
             }
         }
 
-        // Очистка мертвых сущностей
-        entities_.remove_if([](Entity* e) {
-            return !e->isAlive();
-        });
+        // Очистка мертвых
+        entities_.remove_if([](Entity* e) { return !e->isAlive(); });
 
-        // Проверка конца игры
+        // Проверка условий конца игры
         if (player_->getLives() <= 0) {
-            running_ = false;
+            gameOver(false); // false = проигрыш
+        } else if (aliensAlive == 0) {
+            gameOver(true);  // true = победа
         }
     }
 
@@ -124,6 +122,34 @@ public:
         screen_.printAt(0, 0, ("Score: " + std::to_string(score_)).c_str());
         screen_.printAt(0, 10, ("Lives: " + std::to_string(player_->getLives())).c_str());
         screen_.refreshScreen();
+    }
+
+    // Новый метод для обработки конца игры
+    void gameOver(bool isWin) {
+        running_ = false;
+
+        screen_.clearScreen();
+
+        int centerY = height_ / 2;
+        int centerX = width_ / 2;
+
+        if (isWin) {
+            screen_.printAt(centerY - 1, centerX - 5, "VICTORY!", 1); // Зеленый
+            screen_.printAt(centerY + 1, centerX - 10, "All aliens destroyed!");
+        } else {
+            screen_.printAt(centerY - 1, centerX - 5, "GAME OVER", 2); // Красный
+            screen_.printAt(centerY + 1, centerX - 8, "Aliens invaded Earth...");
+        }
+
+        screen_.printAt(centerY + 3, centerX - 8, ("Final Score: " + std::to_string(score_)).c_str());
+        screen_.printAt(centerY + 5, centerX - 12, "Press any key to exit...");
+
+        screen_.refreshScreen();
+
+        // Ждем нажатия любой клавиши, чтобы игрок успел прочитать
+        nodelay(stdscr, false); // Включаем блокирующий режим ввода
+        getch();
+        nodelay(stdscr, true);  // Возвращаем неблокирующий (на всякий случай)
     }
 
     void run() {
