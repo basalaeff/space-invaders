@@ -16,6 +16,7 @@ private:
     int width_ = 80;
     int height_ = 24;
     bool running_ = true;
+    int score_ = 0;
 
 public:
     Game() {
@@ -92,10 +93,10 @@ public:
                     int dy = std::abs(bullet->getY() - target->getY());
 
                     if (dx <= 1 && dy <= 1) {
-                        // ПОПАДАНИЕ!
+                        // ПОПАДАНИЕ
                         bullet->kill();   // Убиваем пулю
                         target->kill();   // Убиваем пришельца
-                        // score_ += 10;     // Добавляем очки
+                        score_ += 10;     // Добавляем очки
                     }
                 }
             }
@@ -120,8 +121,8 @@ public:
                 screen_.printAt(e->getY(), e->getX(), std::string(1, e->getSymbol()).c_str());
             }
         }
-
-        screen_.printAt(0, 0, ("Lives: " + std::to_string(player_->getLives())).c_str());
+        screen_.printAt(0, 0, ("Score: " + std::to_string(score_)).c_str());
+        screen_.printAt(0, 10, ("Lives: " + std::to_string(player_->getLives())).c_str());
         screen_.refreshScreen();
     }
 
