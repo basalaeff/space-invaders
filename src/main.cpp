@@ -1,6 +1,6 @@
 #include "Game.hpp"
 int main() {
-    Game game;
-    game.run();
-    return 0;
+  Game game;
+  game.run();
+  return 0;
 }
