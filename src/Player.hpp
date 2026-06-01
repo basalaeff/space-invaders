@@ -11,7 +11,7 @@ private:
 
 public:
     Player(int x, int y, int screenWidth)
-        : Entity(x, y, '|-o-|', 0), lives_(3), widthLimit_(screenWidth), lastShotTick_(0) {}
+        : Entity(x, y, '^', 0), lives_(3), widthLimit_(screenWidth), lastShotTick_(0) {}
 
     void update() override {
         lastShotTick_++;
