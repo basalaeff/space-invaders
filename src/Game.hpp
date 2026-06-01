@@ -48,8 +48,8 @@ public:
         }
     }
 
-    void update() {
-        // Обновляем все сущности
+        void update() {
+        // Сначала обновляем все сущности
         for (auto* e : entities_) {
             if (e->isAlive()) {
                 e->update();
@@ -57,15 +57,59 @@ public:
                 // Проверка стен для пришельцев
                 if (Alien* alien = dynamic_cast<Alien*>(e)) {
                     alien->checkWallBounce(1, width_ - 2);
+
+                    // Если пришелец достиг низа (земли)
+                    if (alien->getY() >= height_ - 2) {
+                        player_->loseLife();
+                        alien->kill();
+                    }
                 }
             }
         }
 
-        // Очистка мертвых сущностей (пуль, улетевших за экран, и убитых врагов)
-        // Используем remove_if для безопасного удаления из списка
+        // Проверяем столкновения (Пули vs Пришельцы)
+        // Используем два цикла, так как сравниваем объекты внутри одного списка
+        for (auto* bullet : entities_) {
+            // Пропускаем, если это не пуля или она мертва
+            if (!bullet->isAlive()) continue;
+
+            // Пытаемся привести к Bullet*. Если не получилось (это игрок или пришелец) — skip
+            Bullet* b = dynamic_cast<Bullet*>(bullet);
+            if (!b) continue;
+
+            // Пули игрока летят вверх (dy_ < 0).
+            // Если у тебя будут пули врагов, нужно будет проверить направление.
+            // Пока считаем, что все пули в списке — наши, или проверяем тип.
+
+            for (auto* target : entities_) {
+                if (target == bullet) continue; // Не сталкиваем пулю саму с собой
+                if (!target->isAlive()) continue;
+
+                // Нас интересуют только пришельцы (не игрок и не другие пули)
+                if (dynamic_cast<Alien*>(target)) {
+                    // Простая проверка: расстояние между центрами <= 1
+                    int dx = std::abs(bullet->getX() - target->getX());
+                    int dy = std::abs(bullet->getY() - target->getY());
+
+                    if (dx <= 1 && dy <= 1) {
+                        // ПОПАДАНИЕ!
+                        bullet->kill();   // Убиваем пулю
+                        target->kill();   // Убиваем пришельца
+                        // score_ += 10;     // Добавляем очки
+                    }
+                }
+            }
+        }
+
+        // Очистка мертвых сущностей
         entities_.remove_if([](Entity* e) {
             return !e->isAlive();
         });
+
+        // Проверка конца игры
+        if (player_->getLives() <= 0) {
+            running_ = false;
+        }
     }
 
     void draw() {
