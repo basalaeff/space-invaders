@@ -16,10 +16,21 @@ private:
     int width_ = 80;
     int height_ = 24;
     bool running_ = true;
+    bool isGameOver_ = false;
     int score_ = 0;
 
-public:
-    Game() {
+     // Метод для сброса и создания новой игры
+    void new_game() {
+        // Удаление старых сущностей
+        for (auto* e : entities_) delete e;
+        entities_.clear();
+
+        // Сброс состояния
+        score_ = 0;
+        isGameOver_ = false;
+        running_ = true;
+
+        // Создаем новые объекты
         player_ = new Player(40, 22, width_);
         entities_.push_back(player_);
 
@@ -29,13 +40,31 @@ public:
         }
     }
 
+
+public:
+    Game() {
+       new_game();
+    }
+
     ~Game() {
         for (auto* e : entities_) delete e;
     }
 
     void input() {
         int key = getch();
-        if (key == 'q') running_ = false;
+
+        // Если игра окончена, реагируем только на N (рестарт) или Q (выход)
+        if (isGameOver_) {
+            if (key == 'n' || key == 'N') {
+                new_game(); // Перезапуск
+            } else if (key == 'q' || key == 'Q') {
+                running_ = false;
+                isGameOver_ = false;
+            }
+            return; // Выходим из input, чтобы не двигать игрока на экране Game Over
+        }
+
+        if (key == 'q' || key == 'Q') running_ = false;
 
         if (key == KEY_LEFT) player_->moveLeft();
         if (key == KEY_RIGHT) player_->moveRight();
@@ -50,6 +79,7 @@ public:
     }
 
     void update() {
+        if (isGameOver_) return;
         int aliensAlive = 0;
 
         // Обновление и подсчет врагов
@@ -80,8 +110,6 @@ public:
             if (!b) continue;
 
             // Пули игрока летят вверх (dy_ < 0).
-            // Если у тебя будут пули врагов, нужно будет проверить направление.
-            // Пока считаем, что все пули в списке — наши, или проверяем тип.
 
             for (auto* target : entities_) {
                 if (target == bullet || !target->isAlive()) continue;
@@ -127,6 +155,7 @@ public:
     // Новый метод для обработки конца игры
     void gameOver(bool isWin) {
         running_ = false;
+        isGameOver_ = true;
 
         screen_.clearScreen();
 
@@ -142,14 +171,21 @@ public:
         }
 
         screen_.printAt(centerY + 3, centerX - 8, ("Final Score: " + std::to_string(score_)).c_str());
-        screen_.printAt(centerY + 5, centerX - 12, "Press any key to exit...");
+        screen_.printAt(centerY + 5, centerX - 12, "Press Q to exit...");
+        screen_.printAt(centerY + 7, centerX - 12, "Press N to start new game...");
+
 
         screen_.refreshScreen();
+
+        while(isGameOver_) {
+            input();
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
 
         // Ждем нажатия любой клавиши, чтобы игрок успел прочитать
         nodelay(stdscr, false); // Включаем блокирующий режим ввода
         getch();
-        nodelay(stdscr, true);  // Возвращаем неблокирующий (на всякий случай)
+        nodelay(stdscr, true);  // Возвращаем неблокирующий
     }
 
     void run() {
